@@ -2,11 +2,10 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 
-# Schemas for users
 class UserBase(BaseModel):
     username: str
 
-    
+
 class UserViewBase(BaseModel):
     id: int
     username: str
@@ -28,13 +27,13 @@ class UserUpdateBase(BaseModel):
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
 
+
 class UserChangePasswordBase(BaseModel):
     old_password: str
     new_password: str
     new_password_confirm: str
 
 
-# Schemas for token
 class TokenAccessRefreshBase(BaseModel):
     access_token: str
     refresh_token: str
@@ -46,7 +45,6 @@ class TokenAccessBase(BaseModel):
     token_type: str = "bearer"
 
 
-# Schemas for roles
 class RoleBase(BaseModel):
     name: str
 
@@ -70,7 +68,6 @@ class RoleWithUserBase(BaseModel):
         json_encoders = {UserBase: lambda v: v.username}
 
 
-# Schemas for permissions
 class PermissionBase(BaseModel):
     name: str
 

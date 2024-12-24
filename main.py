@@ -1,23 +1,24 @@
 from fastapi import FastAPI
 from config.settings import settings
+from config.database import get_db
 from config import registry
 
-
-def start_application():
-    app = FastAPI(
-                    title=settings.title,
-                    version=settings.version,
-                    docs_url=settings.docs_url,
-                    redoc_url=None,
-                    contact={
-                                "name": "Piotr",
-                                "email": "pkrecz@poczta.onet.pl"})
-    registry.create_tables()
-    registry.load_routers(app)
-    registry.create_role_and_permissions()
-    registry.create_admin_user(settings.ADMIN_USER_NAME)
-    registry.assign_role_to_admin_user(settings.ADMIN_USER_NAME)
-    return app
+db = next(get_db())
 
 
-app = start_application()
+def lifespan(app: FastAPI):
+    registry.init_models()
+    registry.init_data(db)
+    registry.init_routers(app)
+    yield
+
+
+app = FastAPI(
+                lifespan=lifespan,
+                title=settings.title,
+                version=settings.version,
+                docs_url=settings.docs_url,
+                redoc_url=None,
+                contact={
+                            "name": "Piotr",
+                            "email": "pkrecz@poczta.onet.pl"})

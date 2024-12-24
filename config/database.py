@@ -1,19 +1,48 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.exc import DatabaseError, SQLAlchemyError
+from dotenv import load_dotenv
+from functools import cache
+from .util import Singleton
 
 
+class Base(DeclarativeBase):
+    pass
+
+
+load_dotenv()
 url = os.getenv("DATABASE_URL")
 
-engine = create_engine(url)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+
+@cache
+def get_engine(db_url: str = url):
+    return create_engine(db_url)
+
+
+def get_session():
+    session = sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
+    return session()
+
+
+class DatabaseSessionClass(metaclass=Singleton):
+
+    def __enter__(self):
+        self.db = get_session()
+        return self.db
+
+    def __exit__(self, exc_type, exc_value: str, exc_traceback: str) -> None:
+        try:
+            if any([exc_type, exc_value, exc_traceback]):
+                raise
+            self.db.commit()
+        except (SQLAlchemyError, DatabaseError, Exception) as exception:
+            self.db.rollback()
+            raise exception
+        finally:
+            self.db.close()
 
 
 def get_db():
-    db = SessionLocal()
-    try:
+    with DatabaseSessionClass() as db:
         yield db
-    finally:
-        db.close()
